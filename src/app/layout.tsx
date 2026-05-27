@@ -8,7 +8,7 @@ import { auth } from '@/lib/auth'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'SwiftShift Movers - Packers & Movers',
+  title: 'Move EasE - Packers & Movers',
   description: 'Professional packers and movers management system',
   icons: { icon: '/favicon.ico' },
 }

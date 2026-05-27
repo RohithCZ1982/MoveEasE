@@ -208,12 +208,12 @@ export function QuotationDocument({ quotation }: QuotationDocumentProps) {
         {/* Header */}
         <View style={styles.header}>
           <View>
-            <Text style={styles.companyName}>SwiftShift</Text>
+            <Text style={styles.companyName}>Move EasE</Text>
             <Text style={styles.companyTagline}>PACKERS & MOVERS</Text>
             <Text style={styles.companyDetails}>
               123, Business Park, Bangalore{'\n'}
               Phone: +91 98765 43210{'\n'}
-              Email: info@swiftshift.in
+              Email: info@moveease.in
             </Text>
           </View>
           <View>
@@ -261,8 +261,8 @@ export function QuotationDocument({ quotation }: QuotationDocumentProps) {
             <Text style={[styles.tableCell, styles.col1]}>{item.customName || item.item?.name}</Text>
             <Text style={[styles.tableCell, styles.col2]}>{item.unit}</Text>
             <Text style={[styles.tableCell, styles.col3]}>{Number(item.quantity)}</Text>
-            <Text style={[styles.tableCell, styles.col4]}>₹{Number(item.rate).toFixed(2)}</Text>
-            <Text style={[styles.tableCell, styles.col5]}>₹{Number(item.amount).toFixed(2)}</Text>
+            <Text style={[styles.tableCell, styles.col4]}>Rs.{Number(item.rate).toFixed(2)}</Text>
+            <Text style={[styles.tableCell, styles.col5]}>Rs.{Number(item.amount).toFixed(2)}</Text>
           </View>
         ))}
 
@@ -278,25 +278,25 @@ export function QuotationDocument({ quotation }: QuotationDocumentProps) {
             ].filter(row => row.show !== false).map(row => (
               <View key={row.label} style={styles.totalRow}>
                 <Text style={styles.totalLabel}>{row.label}</Text>
-                <Text style={styles.totalValue}>₹{Number(row.value).toFixed(2)}</Text>
+                <Text style={styles.totalValue}>Rs.{Number(row.value).toFixed(2)}</Text>
               </View>
             ))}
 
             {Number(quotation.discountAmount) > 0 && (
               <View style={styles.totalRow}>
                 <Text style={[styles.totalLabel, { color: '#dc2626' }]}>Discount</Text>
-                <Text style={[styles.totalValue, { color: '#dc2626' }]}>-₹{Number(quotation.discountAmount).toFixed(2)}</Text>
+                <Text style={[styles.totalValue, { color: '#dc2626' }]}>-Rs.{Number(quotation.discountAmount).toFixed(2)}</Text>
               </View>
             )}
 
             <View style={styles.totalRow}>
               <Text style={styles.totalLabel}>GST ({Number(quotation.gstRate)}%)</Text>
-              <Text style={styles.totalValue}>₹{Number(quotation.gstAmount).toFixed(2)}</Text>
+              <Text style={styles.totalValue}>Rs.{Number(quotation.gstAmount).toFixed(2)}</Text>
             </View>
 
             <View style={styles.grandTotalRow}>
               <Text style={styles.grandTotalLabel}>GRAND TOTAL</Text>
-              <Text style={styles.grandTotalValue}>₹{Number(quotation.grandTotal).toFixed(2)}</Text>
+              <Text style={styles.grandTotalValue}>Rs.{Number(quotation.grandTotal).toFixed(2)}</Text>
             </View>
           </View>
         </View>
@@ -321,7 +321,7 @@ export function QuotationDocument({ quotation }: QuotationDocumentProps) {
 
         {/* Footer */}
         <View style={styles.footer}>
-          <Text style={styles.footerText}>SwiftShift Movers · info@swiftshift.in · +91 98765 43210</Text>
+          <Text style={styles.footerText}>Move EasE Movers · info@moveease.in · +91 98765 43210</Text>
           <Text style={styles.footerText}>This is a computer-generated document.</Text>
         </View>
       </Page>

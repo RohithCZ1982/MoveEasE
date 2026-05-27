@@ -46,7 +46,7 @@ export default function LoginPage() {
     <div className="min-h-screen bg-gradient-to-br from-blue-950 via-blue-900 to-blue-800 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="flex justify-center mb-8">
-          <Logo size="lg" />
+          <Logo size="lg" className="text-white" />
         </div>
 
         <Card className="shadow-2xl border-0">
@@ -64,7 +64,7 @@ export default function LoginPage() {
                   <Input
                     id="email"
                     type="email"
-                    placeholder="admin@swiftshift.com"
+                    placeholder="admin@moveease.com"
                     className="pl-10"
                     value={form.email}
                     onChange={(e) => setForm({ ...form, email: e.target.value })}
@@ -107,7 +107,7 @@ export default function LoginPage() {
 
             <div className="mt-6 p-4 bg-blue-50 rounded-lg text-xs text-gray-500">
               <p className="font-semibold text-gray-600 mb-1">Demo Credentials:</p>
-              <p>Admin: admin@swiftshift.com / admin123</p>
+              <p>Admin: admin@moveease.com / admin123</p>
               <p>Customer: rajesh@example.com / customer123</p>
             </div>
           </CardContent>

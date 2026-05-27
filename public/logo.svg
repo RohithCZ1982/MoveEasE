@@ -1,0 +1,43 @@
+<svg viewBox="0 0 460 480" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="460" height="480" rx="48" fill="#C49068"/>
+
+  <!-- Open box icon: front face -->
+  <path d="M100,140 L100,320 L210,320 L210,140" fill="none" stroke="#1a1a1a" stroke-width="8" stroke-linejoin="round" stroke-linecap="round"/>
+
+  <!-- Left face of box -->
+  <path d="M55,110 L100,140 L100,320 L55,290 Z" fill="none" stroke="#1a1a1a" stroke-width="8" stroke-linejoin="round" stroke-linecap="round"/>
+
+  <!-- Top rim (open box - only two visible edges of top) -->
+  <path d="M55,110 L100,140 L210,140" fill="none" stroke="#1a1a1a" stroke-width="8" stroke-linejoin="round" stroke-linecap="round"/>
+
+  <!-- Open lid panel (folds back upper-left) -->
+  <path d="M55,110 L100,140 L78,72 L33,42 Z" fill="none" stroke="#1a1a1a" stroke-width="8" stroke-linejoin="round" stroke-linecap="round"/>
+
+  <!-- Speed lines (right of box, fanning out) -->
+  <line x1="218" y1="120" x2="388" y2="108" stroke="#1a1a1a" stroke-width="8" stroke-linecap="round"/>
+  <line x1="218" y1="140" x2="378" y2="130" stroke="#1a1a1a" stroke-width="7" stroke-linecap="round"/>
+  <line x1="218" y1="158" x2="366" y2="150" stroke="#1a1a1a" stroke-width="6.5" stroke-linecap="round"/>
+  <line x1="218" y1="175" x2="352" y2="169" stroke="#1a1a1a" stroke-width="6" stroke-linecap="round"/>
+  <line x1="218" y1="191" x2="336" y2="186" stroke="#1a1a1a" stroke-width="5.5" stroke-linecap="round"/>
+  <line x1="218" y1="206" x2="318" y2="202" stroke="#1a1a1a" stroke-width="5" stroke-linecap="round"/>
+  <line x1="218" y1="219" x2="298" y2="216" stroke="#1a1a1a" stroke-width="4.5" stroke-linecap="round"/>
+  <line x1="218" y1="230" x2="276" y2="228" stroke="#1a1a1a" stroke-width="4" stroke-linecap="round"/>
+
+  <!-- Company name -->
+  <text x="230" y="385"
+    font-family="'Arial Black','Helvetica Neue',Arial,sans-serif"
+    font-weight="900"
+    font-size="68"
+    fill="#1a1a1a"
+    text-anchor="middle">Move EasE</text>
+
+  <!-- Tagline -->
+  <text x="230" y="432"
+    font-family="Arial,sans-serif"
+    font-weight="700"
+    font-size="22"
+    fill="#1a1a1a"
+    text-anchor="middle"
+    letter-spacing="4">PACKERS &amp; MOVERS</text>
+</svg>

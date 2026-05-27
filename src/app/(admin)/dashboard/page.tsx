@@ -118,7 +118,7 @@ export default async function DashboardPage() {
 
   return (
     <div>
-      <Header title="Dashboard" subtitle="Welcome to SwiftShift Movers" />
+      <Header title="Dashboard" subtitle="Welcome to Move EasE" />
 
       <div className="p-6 space-y-6">
         {/* Stats Grid */}

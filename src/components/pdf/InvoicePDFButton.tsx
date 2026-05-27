@@ -1,8 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import React, { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Download, Loader2 } from 'lucide-react'
+import { useToast } from '@/components/ui/use-toast'
 
 interface InvoicePDFButtonProps {
   invoice: any
@@ -10,16 +11,17 @@ interface InvoicePDFButtonProps {
 
 export default function InvoicePDFButton({ invoice }: InvoicePDFButtonProps) {
   const [generating, setGenerating] = useState(false)
+  const { toast } = useToast()
 
   async function generatePDF() {
     setGenerating(true)
     try {
-      const ReactPDF = await import('@react-pdf/renderer')
-      const { InvoiceDocument } = await import('./InvoiceDocument')
-      const React = await import('react')
+      const [{ pdf }, { InvoiceDocument }] = await Promise.all([
+        import('@react-pdf/renderer'),
+        import('./InvoiceDocument'),
+      ])
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const blob = await (ReactPDF as any).pdf(React.createElement(InvoiceDocument, { invoice })).toBlob()
+      const blob = await pdf(React.createElement(InvoiceDocument, { invoice })).toBlob()
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
@@ -28,6 +30,7 @@ export default function InvoicePDFButton({ invoice }: InvoicePDFButtonProps) {
       URL.revokeObjectURL(url)
     } catch (err) {
       console.error('PDF generation error:', err)
+      toast({ title: 'PDF generation failed', description: String(err), variant: 'destructive' })
     } finally {
       setGenerating(false)
     }

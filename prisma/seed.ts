@@ -1,17 +1,24 @@
 import { PrismaClient, UserRole, ItemUnit, ServiceType } from '@prisma/client'
+import { PrismaPg } from '@prisma/adapter-pg'
+import { Pool } from 'pg'
 import bcrypt from 'bcryptjs'
 
-const prisma = new PrismaClient()
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false },
+})
+const adapter = new PrismaPg(pool)
+const prisma = new PrismaClient({ adapter })
 
 async function main() {
   // Create admin user
   const adminPassword = await bcrypt.hash('admin123', 12)
   const admin = await prisma.user.upsert({
-    where: { email: 'admin@swiftshift.com' },
+    where: { email: 'admin@moveease.com' },
     update: {},
     create: {
       name: 'Admin User',
-      email: 'admin@swiftshift.com',
+      email: 'admin@moveease.com',
       password: adminPassword,
       role: UserRole.ADMIN,
     },
@@ -205,7 +212,7 @@ async function main() {
   }
 
   console.log('✅ Database seeded successfully!')
-  console.log('Admin login: admin@swiftshift.com / admin123')
+  console.log('Admin login: admin@moveease.com / admin123')
   console.log('Customer login: rajesh@example.com / customer123')
 }
 

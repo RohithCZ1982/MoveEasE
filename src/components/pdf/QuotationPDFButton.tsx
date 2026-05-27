@@ -1,9 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import React, { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Download, Loader2 } from 'lucide-react'
-import { formatCurrency, formatDate } from '@/lib/utils'
+import { useToast } from '@/components/ui/use-toast'
 
 interface QuotationPDFButtonProps {
   quotation: any
@@ -11,16 +11,17 @@ interface QuotationPDFButtonProps {
 
 export default function QuotationPDFButton({ quotation }: QuotationPDFButtonProps) {
   const [generating, setGenerating] = useState(false)
+  const { toast } = useToast()
 
   async function generatePDF() {
     setGenerating(true)
     try {
-      const ReactPDF = await import('@react-pdf/renderer')
-      const { QuotationDocument } = await import('./QuotationDocument')
-      const React = await import('react')
+      const [{ pdf }, { QuotationDocument }] = await Promise.all([
+        import('@react-pdf/renderer'),
+        import('./QuotationDocument'),
+      ])
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const blob = await (ReactPDF as any).pdf(React.createElement(QuotationDocument, { quotation })).toBlob()
+      const blob = await pdf(React.createElement(QuotationDocument, { quotation })).toBlob()
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
@@ -29,6 +30,7 @@ export default function QuotationPDFButton({ quotation }: QuotationPDFButtonProp
       URL.revokeObjectURL(url)
     } catch (err) {
       console.error('PDF generation error:', err)
+      toast({ title: 'PDF generation failed', description: String(err), variant: 'destructive' })
     } finally {
       setGenerating(false)
     }

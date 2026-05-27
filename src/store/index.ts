@@ -1,6 +1,13 @@
 import { create } from 'zustand'
 import { ItemUnit } from '@prisma/client'
 
+function randomId(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID()
+  }
+  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 9)}`
+}
+
 export interface QuotationItem {
   id: string
   itemId?: string
@@ -109,7 +116,7 @@ export const useQuotationStore = create<QuotationStore>((set, get) => ({
   },
 
   addItem: (item) => {
-    const id = crypto.randomUUID()
+    const id = randomId()
     const amount = item.quantity * item.rate
     set((state) => {
       const newForm = {
@@ -146,7 +153,7 @@ export const useQuotationStore = create<QuotationStore>((set, get) => ({
   setTemplateItems: (items) => {
     const newItems = items.map((item) => ({
       ...item,
-      id: crypto.randomUUID(),
+      id: randomId(),
       amount: item.quantity * item.rate,
     }))
     set((state) => {

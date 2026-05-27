@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useToast } from '@/components/ui/use-toast'
 import { cn, formatCurrency, formatDate, getStatusColor } from '@/lib/utils'
-import { Loader2, ArrowLeft } from 'lucide-react'
+import { Loader2, ArrowLeft, XCircle } from 'lucide-react'
 import dynamic from 'next/dynamic'
 
 const InvoicePDFButton = dynamic(() => import('@/components/pdf/InvoicePDFButton'), { ssr: false })
@@ -22,6 +22,7 @@ export default function InvoiceDetailPage() {
   const [invoice, setInvoice] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [cancelling, setCancelling] = useState(false)
   const [payment, setPayment] = useState({
     status: '',
     paidAmount: '',
@@ -48,6 +49,30 @@ export default function InvoiceDetailPage() {
       })
       .catch(() => setLoading(false))
   }, [id])
+
+  async function handleCancel() {
+    if (!confirm('Cancel this invoice? This action marks it as CANCELLED.')) return
+    setCancelling(true)
+    try {
+      const res = await fetch(`/api/invoices/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'CANCELLED' }),
+      })
+      const data = await res.json()
+      if (res.ok) {
+        setInvoice(data)
+        setPayment(p => ({ ...p, status: 'CANCELLED' }))
+        toast({ title: 'Invoice cancelled' })
+      } else {
+        toast({ title: 'Error', description: data.error, variant: 'destructive' })
+      }
+    } catch {
+      toast({ title: 'Error', variant: 'destructive' })
+    } finally {
+      setCancelling(false)
+    }
+  }
 
   async function handleUpdate() {
     setSaving(true)
@@ -100,6 +125,12 @@ export default function InvoiceDetailPage() {
           </Button>
           <div className="flex gap-2">
             <InvoicePDFButton invoice={invoice} />
+            {invoice.status !== 'CANCELLED' && invoice.status !== 'PAID' && (
+              <Button variant="destructive" size="sm" onClick={handleCancel} disabled={cancelling}>
+                {cancelling ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <XCircle className="mr-2 h-4 w-4" />}
+                Cancel Invoice
+              </Button>
+            )}
           </div>
         </div>
 

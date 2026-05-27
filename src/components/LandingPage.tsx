@@ -91,7 +91,7 @@ const testimonials = [
   {
     name: 'Priya Sharma',
     location: 'Bangalore → Mumbai',
-    text: 'SwiftShift made our interstate move completely stress-free. The team was professional, punctual, and handled everything with great care. Highly recommend!',
+    text: 'Move EasE made our interstate move completely stress-free. The team was professional, punctual, and handled everything with great care. Highly recommend!',
     rating: 5,
     avatar: 'PS',
   },
@@ -154,18 +154,18 @@ export default function LandingPage() {
       {/* Navbar */}
       <nav className={cn(
         'fixed top-0 left-0 right-0 z-50 transition-all duration-300',
-        scrolled ? 'bg-white/95 backdrop-blur-md shadow-md' : 'bg-transparent'
+        scrolled ? 'bg-white/95 backdrop-blur-md shadow-md' : 'bg-[#1e3a5f]/90 backdrop-blur-sm'
       )}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
-            <Logo size="md" />
+            <Logo size="md" className={scrolled ? 'text-[#1e3a5f]' : 'text-white'} />
 
             {/* Desktop Nav */}
             <div className="hidden md:flex items-center gap-8">
               {['Services', 'How It Works', 'Cities', 'About', 'Contact'].map((item) => (
                 <a
                   key={item}
-                  href={`#${item.toLowerCase().replace(' ', '-')}`}
+                  href={`#${item.toLowerCase().replaceAll(' ', '-')}`}
                   className={cn(
                     'text-sm font-medium transition-colors',
                     scrolled ? 'text-gray-700 hover:text-blue-900' : 'text-white/90 hover:text-white'
@@ -217,7 +217,7 @@ export default function LandingPage() {
               {['Services', 'How It Works', 'Cities', 'About', 'Contact'].map((item) => (
                 <a
                   key={item}
-                  href={`#${item.toLowerCase().replace(' ', '-')}`}
+                  href={`#${item.toLowerCase().replaceAll(' ', '-')}`}
                   className="block text-gray-700 font-medium py-2"
                   onClick={() => setMobileMenuOpen(false)}
                 >
@@ -433,11 +433,11 @@ export default function LandingPage() {
       </section>
 
       {/* Why Choose Us */}
-      <section className="py-24 bg-gradient-to-br from-[#1e3a5f] to-[#0f2040]">
+      <section id="about" className="py-24 bg-gradient-to-br from-[#1e3a5f] to-[#0f2040]">
         <div className="max-w-6xl mx-auto px-4">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
             <div>
-              <span className="text-orange-400 font-semibold text-sm uppercase tracking-wider">Why SwiftShift</span>
+              <span className="text-orange-400 font-semibold text-sm uppercase tracking-wider">Why Move EasE</span>
               <h2 className="text-4xl font-bold text-white mt-2 mb-6">
                 Moving Forward with <span className="text-orange-400">Trust & Technology</span>
               </h2>
@@ -467,10 +467,10 @@ export default function LandingPage() {
 
             <div className="grid grid-cols-2 gap-4">
               {[
-                { icon: Truck, label: 'Modern Fleet', value: '50+ Vehicles' },
-                { icon: Users, label: 'Expert Team', value: '200+ Staff' },
+                { icon: Truck, label: 'Modern Fleet', value: '5+ Vehicles' },
+                { icon: Users, label: 'Expert Team', value: '20+ Staff' },
                 { icon: Shield, label: 'Fully Insured', value: '100% Coverage' },
-                { icon: Award, label: 'Awards Won', value: '25+ Awards' },
+                { icon: Award, label: 'Reliable', value: '*****' },
               ].map(({ icon: Icon, label, value }) => (
                 <div
                   key={label}
@@ -565,7 +565,7 @@ export default function LandingPage() {
             Ready to Make Your Move?
           </h2>
           <p className="text-orange-100 text-xl mb-10">
-            Join 5000+ satisfied customers who trusted SwiftShift for their perfect move.
+            Join 5000+ satisfied customers who trusted Move EasE for their perfect move.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link href="/login">
@@ -592,11 +592,11 @@ export default function LandingPage() {
       </section>
 
       {/* Footer */}
-      <footer className="bg-[#0f1e3d] text-white py-16">
+      <footer id="contact" className="bg-[#0f1e3d] text-white py-16">
         <div className="max-w-7xl mx-auto px-4">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-12">
             <div className="lg:col-span-2">
-              <Logo size="md" className="mb-4" />
+              <Logo size="md" className="mb-4 text-white" />
               <p className="text-blue-300 leading-relaxed max-w-sm">
                 India's most trusted packers and movers — combining cutting-edge technology with professional moving expertise for a seamless relocation experience.
               </p>
@@ -631,9 +631,9 @@ export default function LandingPage() {
                   <Phone className="h-4 w-4 text-orange-400" />
                   +91 98765 43210
                 </a>
-                <a href="mailto:info@swiftshift.in" className="flex items-center gap-3 text-blue-300 hover:text-white text-sm">
+                <a href="mailto:info@moveease.in" className="flex items-center gap-3 text-blue-300 hover:text-white text-sm">
                   <Mail className="h-4 w-4 text-orange-400" />
-                  info@swiftshift.in
+                  info@moveease.in
                 </a>
                 <div className="flex items-start gap-3 text-blue-300 text-sm">
                   <MapPin className="h-4 w-4 text-orange-400 shrink-0 mt-0.5" />
@@ -655,7 +655,7 @@ export default function LandingPage() {
 
           <div className="border-t border-white/10 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
             <p className="text-blue-400 text-sm">
-              © 2025 SwiftShift Movers. All rights reserved.
+              © 2025 Move EasE. All rights reserved.
             </p>
             <div className="flex gap-6 text-xs text-blue-400">
               <a href="#" className="hover:text-white">Privacy Policy</a>

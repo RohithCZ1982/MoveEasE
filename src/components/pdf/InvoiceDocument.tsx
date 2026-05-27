@@ -65,7 +65,7 @@ export function InvoiceDocument({ invoice }: { invoice: any }) {
       <Page size="A4" style={styles.page}>
         <View style={styles.header}>
           <View>
-            <Text style={styles.companyName}>SwiftShift</Text>
+            <Text style={styles.companyName}>Move EasE</Text>
             <Text style={styles.companyTagline}>PACKERS & MOVERS</Text>
             <Text style={styles.companyDetails}>
               123, Business Park, Bangalore{'\n'}Phone: +91 98765 43210{'\n'}GST: 29XXXXX1234Z1
@@ -110,8 +110,8 @@ export function InvoiceDocument({ invoice }: { invoice: any }) {
             <Text style={[styles.tableCell, styles.col1]}>{item.customName}</Text>
             <Text style={[styles.tableCell, styles.col2]}>{item.unit}</Text>
             <Text style={[styles.tableCell, styles.col3]}>{Number(item.quantity)}</Text>
-            <Text style={[styles.tableCell, styles.col4]}>₹{Number(item.rate).toFixed(2)}</Text>
-            <Text style={[styles.tableCell, styles.col5]}>₹{Number(item.amount).toFixed(2)}</Text>
+            <Text style={[styles.tableCell, styles.col4]}>Rs.{Number(item.rate).toFixed(2)}</Text>
+            <Text style={[styles.tableCell, styles.col5]}>Rs.{Number(item.amount).toFixed(2)}</Text>
           </View>
         ))}
 
@@ -119,31 +119,31 @@ export function InvoiceDocument({ invoice }: { invoice: any }) {
           <View style={styles.totalsBox}>
             <View style={styles.totalRow}>
               <Text style={styles.totalLabel}>Subtotal</Text>
-              <Text style={styles.totalValue}>₹{Number(invoice.subtotal).toFixed(2)}</Text>
+              <Text style={styles.totalValue}>Rs.{Number(invoice.subtotal).toFixed(2)}</Text>
             </View>
             {Number(invoice.discountAmount) > 0 && (
               <View style={styles.totalRow}>
                 <Text style={[styles.totalLabel, { color: '#dc2626' }]}>Discount</Text>
-                <Text style={[styles.totalValue, { color: '#dc2626' }]}>-₹{Number(invoice.discountAmount).toFixed(2)}</Text>
+                <Text style={[styles.totalValue, { color: '#dc2626' }]}>-Rs.{Number(invoice.discountAmount).toFixed(2)}</Text>
               </View>
             )}
             <View style={styles.totalRow}>
               <Text style={styles.totalLabel}>GST (18%)</Text>
-              <Text style={styles.totalValue}>₹{Number(invoice.gstAmount).toFixed(2)}</Text>
+              <Text style={styles.totalValue}>Rs.{Number(invoice.gstAmount).toFixed(2)}</Text>
             </View>
             <View style={styles.grandTotalRow}>
               <Text style={styles.grandTotalLabel}>GRAND TOTAL</Text>
-              <Text style={styles.grandTotalValue}>₹{Number(invoice.grandTotal).toFixed(2)}</Text>
+              <Text style={styles.grandTotalValue}>Rs.{Number(invoice.grandTotal).toFixed(2)}</Text>
             </View>
             {Number(invoice.paidAmount) > 0 && (
               <>
                 <View style={[styles.totalRow, { marginTop: 6 }]}>
                   <Text style={[styles.totalLabel, { color: '#16a34a' }]}>Amount Paid</Text>
-                  <Text style={[styles.totalValue, { color: '#16a34a' }]}>₹{Number(invoice.paidAmount).toFixed(2)}</Text>
+                  <Text style={[styles.totalValue, { color: '#16a34a' }]}>Rs.{Number(invoice.paidAmount).toFixed(2)}</Text>
                 </View>
                 <View style={styles.totalRow}>
                   <Text style={[styles.totalLabel, { color: '#dc2626', fontFamily: 'Helvetica-Bold' }]}>Balance Due</Text>
-                  <Text style={[styles.totalValue, { color: '#dc2626', fontFamily: 'Helvetica-Bold' }]}>₹{Number(invoice.dueAmount).toFixed(2)}</Text>
+                  <Text style={[styles.totalValue, { color: '#dc2626', fontFamily: 'Helvetica-Bold' }]}>Rs.{Number(invoice.dueAmount).toFixed(2)}</Text>
                 </View>
               </>
             )}
@@ -168,7 +168,7 @@ export function InvoiceDocument({ invoice }: { invoice: any }) {
         )}
 
         <View style={styles.footer}>
-          <Text style={styles.footerText}>SwiftShift Movers · info@swiftshift.in · +91 98765 43210</Text>
+          <Text style={styles.footerText}>Move EasE Movers · info@moveease.in · +91 98765 43210</Text>
           <Text style={styles.footerText}>This is a computer-generated document.</Text>
         </View>
       </Page>
