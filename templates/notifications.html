@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+
+{% block title %}Notifications - EasyMove{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h2>Notification History</h2>
+    <p>View all your address change notifications and their status</p>
+    
+    <div class="form-group">
+        <label for="notification-profile-filter">Filter by Profile</label>
+        <select id="notification-profile-filter" class="profile-select" onchange="loadNotifications()">
+            <option value="">All Profiles</option>
+        </select>
+    </div>
+    
+    <div id="notifications-history"></div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Load notifications
+async function loadNotifications() {
+    const profileId = document.getElementById('notification-profile-filter').value;
+    const url = profileId ? `/api/notifications?profile_id=${profileId}` : '/api/notifications';
+    
+    try {
+        const notifications = await apiCall(url);
+        const history = document.getElementById('notifications-history');
+        
+        if (notifications.length === 0) {
+            history.innerHTML = '<p class="text-center">No notifications yet. Change an address to see notifications here!</p>';
+            return;
+        }
+        
+        history.innerHTML = '';
+        
+        // Group by date
+        const grouped = {};
+        notifications.forEach(notif => {
+            const date = new Date(notif.created_at).toLocaleDateString();
+            if (!grouped[date]) {
+                grouped[date] = [];
+            }
+            grouped[date].push(notif);
+        });
+        
+        // Sort dates (newest first)
+        const sortedDates = Object.keys(grouped).sort((a, b) => new Date(b) - new Date(a));
+        
+        sortedDates.forEach(date => {
+            const dateSection = document.createElement('div');
+            dateSection.style.marginBottom = '30px';
+            
+            const dateHeader = document.createElement('h3');
+            dateHeader.textContent = date;
+            dateHeader.style.marginBottom = '15px';
+            dateSection.appendChild(dateHeader);
+            
+            grouped[date].reverse().forEach(notif => {
+                const item = document.createElement('div');
+                item.className = `notification-item ${notif.status === 'completed' ? 'success' : 'pending'}`;
+                item.innerHTML = `
+                    <strong>${notif.service_name}</strong><br>
+                    <small>Status: <strong>${notif.status}</strong></small><br>
+                    <small>Old Address: ${notif.old_address || 'N/A'}</small><br>
+                    <small>New Address: ${notif.new_address}</small><br>
+                    <small>Time: ${new Date(notif.created_at).toLocaleTimeString()}</small>
+                    ${notif.contact_info ? `<br><small>Contact: ${notif.contact_info}</small>` : ''}
+                `;
+                dateSection.appendChild(item);
+            });
+            
+            history.appendChild(dateSection);
+        });
+        
+    } catch (error) {
+        showAlert('Error loading notifications: ' + error.message, 'error');
+    }
+}
+
+// Initialize
+document.addEventListener('DOMContentLoaded', () => {
+    loadProfileSelects();
+    loadNotifications();
+});
+</script>
+{% endblock %}
+
+

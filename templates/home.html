@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+
+{% block title %}Home - EasyMove{% endblock %}
+
+{% block content %}
+<div class="hero">
+    <h1>Welcome to EasyMove</h1>
+    <p>Your one-stop solution for managing address changes when moving to a new house</p>
+    <a href="{{ url_for('profiles') }}" class="btn">Get Started</a>
+</div>
+
+<div class="card">
+    <h2>Quick Stats</h2>
+    <div class="stats" id="stats-container">
+        <div class="stat-card">
+            <h3 id="total-profiles">-</h3>
+            <p>Total Profiles</p>
+        </div>
+        <div class="stat-card">
+            <h3 id="total-services">-</h3>
+            <p>Services Available</p>
+        </div>
+        <div class="stat-card">
+            <h3 id="total-notifications">-</h3>
+            <p>Notifications Sent</p>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <h2>Features</h2>
+    <div class="features">
+        <div class="feature-card">
+            <h3>👤 Profile Management</h3>
+            <p>Create and manage your personal profile with all your contact information</p>
+            <a href="{{ url_for('profiles') }}" class="btn btn-small mt-20">Manage Profiles</a>
+        </div>
+        <div class="feature-card">
+            <h3>🔧 Service Management</h3>
+            <p>Add and organize all services that need address updates - utilities, insurance, health, and more</p>
+            <a href="{{ url_for('services') }}" class="btn btn-small mt-20">Manage Services</a>
+        </div>
+        <div class="feature-card">
+            <h3>🚀 One-Click Address Change</h3>
+            <p>Notify all your services at once when you move to a new address</p>
+            <a href="{{ url_for('change_address') }}" class="btn btn-small mt-20">Change Address</a>
+        </div>
+        <div class="feature-card">
+            <h3>📋 Notification History</h3>
+            <p>Track all your address change notifications and their status</p>
+            <a href="{{ url_for('notifications') }}" class="btn btn-small mt-20">View History</a>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <h2>How It Works</h2>
+    <ol style="line-height: 2; color: #666;">
+        <li><strong>Create Your Profile:</strong> Enter your personal information and current address</li>
+        <li><strong>Add Services:</strong> Select all the services you need to notify (gas, water, electricity, insurance, etc.)</li>
+        <li><strong>Change Address:</strong> When you move, simply enter your new address and click "Notify All Services"</li>
+        <li><strong>Track Notifications:</strong> View your notification history to keep track of all address changes</li>
+    </ol>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+async function loadStats() {
+    try {
+        const [profiles, services, notifications] = await Promise.all([
+            fetch('/api/profiles').then(r => r.json()),
+            fetch('/api/services').then(r => r.json()),
+            fetch('/api/notifications').then(r => r.json())
+        ]);
+        
+        document.getElementById('total-profiles').textContent = Object.keys(profiles).length;
+        document.getElementById('total-services').textContent = Object.keys(services).length;
+        document.getElementById('total-notifications').textContent = notifications.length;
+    } catch (error) {
+        console.error('Error loading stats:', error);
+    }
+}
+
+document.addEventListener('DOMContentLoaded', loadStats);
+</script>
+{% endblock %}
+
+

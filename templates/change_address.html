@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+
+{% block title %}Change Address - EasyMove{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h2>Change Address</h2>
+    <p>Select your profile and enter your new address. We'll notify all your services automatically!</p>
+    
+    <form id="change-address-form">
+        <div class="form-group">
+            <label for="change-address-profile">Select Profile *</label>
+            <select id="change-address-profile" class="profile-select" required>
+                <option value="">-- Select a profile --</option>
+            </select>
+        </div>
+        
+        <div id="profile-info" class="hidden" style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+            <h3>Current Profile Information</h3>
+            <p><strong>Name:</strong> <span id="profile-name-display"></span></p>
+            <p><strong>Current Address:</strong> <span id="current-address-display"></span></p>
+            <p><strong>Services to Notify:</strong> <span id="services-count"></span></p>
+        </div>
+        
+        <div class="form-group">
+            <label for="new-address">New Address *</label>
+            <textarea id="new-address" required placeholder="Enter your new address here..."></textarea>
+        </div>
+        
+        <button type="submit" class="btn btn-success">Notify All Services</button>
+    </form>
+</div>
+
+<div id="notifications-result" class="card hidden">
+    <h2>Notification Results</h2>
+    <div id="notifications-list"></div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let selectedProfile = null;
+
+// Load profile info when selected
+document.getElementById('change-address-profile').addEventListener('change', async function() {
+    const profileId = this.value;
+    
+    if (!profileId) {
+        document.getElementById('profile-info').classList.add('hidden');
+        selectedProfile = null;
+        return;
+    }
+    
+    try {
+        selectedProfile = await apiCall(`/api/profiles/${profileId}`);
+        
+        document.getElementById('profile-name-display').textContent = selectedProfile.name;
+        document.getElementById('current-address-display').textContent = selectedProfile.current_address;
+        document.getElementById('services-count').textContent = Object.keys(selectedProfile.services || {}).length;
+        document.getElementById('profile-info').classList.remove('hidden');
+        
+        if (selectedProfile.current_address) {
+            document.getElementById('new-address').value = selectedProfile.current_address;
+        }
+    } catch (error) {
+        showAlert('Error loading profile: ' + error.message, 'error');
+    }
+});
+
+// Change address form submission
+document.getElementById('change-address-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const profileId = document.getElementById('change-address-profile').value;
+    const newAddress = document.getElementById('new-address').value;
+    
+    if (!profileId || !newAddress) {
+        showAlert('Please select a profile and enter a new address', 'error');
+        return;
+    }
+    
+    if (!selectedProfile || Object.keys(selectedProfile.services || {}).length === 0) {
+        showAlert('This profile has no services to notify. Please add services first.', 'error');
+        return;
+    }
+    
+    if (!confirm(`Are you sure you want to change the address and notify ${Object.keys(selectedProfile.services || {}).length} services?`)) {
+        return;
+    }
+    
+    try {
+        const result = await apiCall(`/api/profiles/${profileId}/change-address`, 'POST', {
+            new_address: newAddress
+        });
+        
+        showAlert(`✅ Address change notifications sent to ${result.notifications.length} services!`, 'success');
+        
+        const resultCard = document.getElementById('notifications-result');
+        const list = document.getElementById('notifications-list');
+        resultCard.classList.remove('hidden');
+        
+        list.innerHTML = '<h3>Notifications Sent:</h3>';
+        
+        result.notifications.forEach(notif => {
+            const item = document.createElement('div');
+            item.className = 'notification-item success';
+            item.innerHTML = `
+                <strong>${notif.service_name}</strong><br>
+                <small>Status: ${notif.status}</small><br>
+                <small>Old Address: ${notif.old_address || 'N/A'}</small><br>
+                <small>New Address: ${notif.new_address}</small>
+                ${notif.contact_info ? `<br><small>Contact: ${notif.contact_info}</small>` : ''}
+            `;
+            list.appendChild(item);
+        });
+        
+        // Update profile info
+        selectedProfile.current_address = newAddress;
+        document.getElementById('current-address-display').textContent = newAddress;
+        
+        // Scroll to results
+        resultCard.scrollIntoView({ behavior: 'smooth' });
+        
+    } catch (error) {
+        showAlert('Error: ' + error.message, 'error');
+    }
+});
+
+// Initialize
+document.addEventListener('DOMContentLoaded', () => {
+    loadProfileSelects();
+});
+</script>
+{% endblock %}
+
+

@@ -1,0 +1,462 @@
+{% extends "base.html" %}
+
+{% block title %}Services - EasyMove{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h2>Manage Services</h2>
+    <div class="form-group">
+        <label>Select Profile</label>
+        <select id="profile-select" class="profile-select" onchange="loadProfileServices()">
+            <option value="">-- Select a profile --</option>
+        </select>
+    </div>
+
+    <div id="services-section" class="hidden">
+        <h3>Available Services</h3>
+        <p>Click on service cards to add them to your profile</p>
+        <div id="services-grid" class="services-grid"></div>
+
+        <div id="selected-services" style="margin-top: 30px;">
+            <h3>Your Services</h3>
+            <div id="selected-services-list"></div>
+        </div>
+
+        <div style="margin-top: 30px;">
+            <button class="btn btn-success" onclick="showAddServiceForm()">Add Custom Service</button>
+            <button class="btn" onclick="getAISuggestions()">Get AI Suggestions</button>
+        </div>
+
+        <div id="ai-suggestions"></div>
+
+        <div id="add-service-form" class="hidden" style="margin-top: 30px; padding: 20px; background: #f8f9fa; border-radius: 8px;">
+            <h3>Add Custom Service</h3>
+            <div class="form-group">
+                <label>Service Name *</label>
+                <input type="text" id="custom-service-name" placeholder="e.g., Gym Membership" required>
+            </div>
+            <div class="form-group">
+                <label>Email Address</label>
+                <input type="email" id="custom-service-email" placeholder="service@example.com">
+            </div>
+            <div class="form-group">
+                <label>Contact Information</label>
+                <input type="text" id="custom-service-contact" placeholder="Phone, email, or website">
+            </div>
+            <div class="form-group">
+                <label>Phone Number</label>
+                <input type="tel" id="custom-service-phone" placeholder="+1 234 567 8900">
+            </div>
+            <div class="form-group">
+                <label>Account Number (optional)</label>
+                <input type="text" id="custom-service-account" placeholder="Your account number">
+            </div>
+            <div class="form-group">
+                <label>Website</label>
+                <input type="url" id="custom-service-website" placeholder="https://example.com">
+            </div>
+            <button class="btn" onclick="addCustomService()">Add Service</button>
+            <button class="btn btn-secondary" onclick="hideAddServiceForm()">Cancel</button>
+        </div>
+
+        <div id="edit-service-form" class="hidden" style="margin-top: 30px; padding: 20px; background: #f8f9fa; border-radius: 8px;">
+            <h3>Edit Service Details</h3>
+            <input type="hidden" id="edit-service-key">
+            <div class="form-group">
+                <label>Service Name *</label>
+                <input type="text" id="edit-service-name" required>
+            </div>
+            <div class="form-group">
+                <label>Email Address</label>
+                <input type="email" id="edit-service-email" placeholder="service@example.com">
+            </div>
+            <div class="form-group">
+                <label>Contact Information</label>
+                <input type="text" id="edit-service-contact" placeholder="Phone, email, or website">
+            </div>
+            <div class="form-group">
+                <label>Phone Number</label>
+                <input type="tel" id="edit-service-phone" placeholder="+1 234 567 8900">
+            </div>
+            <div class="form-group">
+                <label>Account Number</label>
+                <input type="text" id="edit-service-account" placeholder="Your account number">
+            </div>
+            <div class="form-group">
+                <label>Website</label>
+                <input type="url" id="edit-service-website" placeholder="https://example.com">
+            </div>
+            <button class="btn" onclick="saveServiceEdit()">Save Changes</button>
+            <button class="btn btn-secondary" onclick="hideEditServiceForm()">Cancel</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let currentProfileId = null;
+let availableServices = {};
+let userServices = {};
+
+// Load available services
+async function loadServices() {
+    try {
+        availableServices = await apiCall('/api/services');
+        displayServices();
+    } catch (error) {
+        showAlert('Error loading services: ' + error.message, 'error');
+    }
+}
+
+// Display available services
+function displayServices() {
+    const grid = document.getElementById('services-grid');
+    grid.innerHTML = '';
+    
+    for (const [key, service] of Object.entries(availableServices)) {
+        const card = document.createElement('div');
+        card.className = 'service-card';
+        if (userServices[key]) {
+            card.classList.add('selected');
+        }
+        card.innerHTML = `
+            <h3>${service.name}</h3>
+            <p>${service.category}</p>
+        `;
+        card.onclick = () => toggleService(key);
+        grid.appendChild(card);
+    }
+}
+
+// Toggle service selection
+async function toggleService(serviceKey) {
+    if (!currentProfileId) {
+        showAlert('Please select a profile first', 'error');
+        return;
+    }
+    
+    const service = availableServices[serviceKey];
+    
+    if (userServices[serviceKey]) {
+        // Remove service
+        try {
+            await apiCall(`/api/profiles/${currentProfileId}/services/${serviceKey}`, 'DELETE');
+            delete userServices[serviceKey];
+            showAlert('Service removed', 'success');
+        } catch (error) {
+            showAlert('Error removing service: ' + error.message, 'error');
+        }
+    } else {
+        // Add service
+        try {
+            await apiCall(`/api/profiles/${currentProfileId}/services`, 'POST', {
+                service_key: serviceKey,
+                service_details: {
+                    name: service.name,
+                    category: service.category,
+                    email: '',
+                    contact: '',
+                    phone: '',
+                    account: '',
+                    website: ''
+                }
+            });
+            userServices[serviceKey] = {
+                name: service.name,
+                category: service.category,
+                email: '',
+                contact: '',
+                phone: '',
+                account: '',
+                website: ''
+            };
+            showAlert('Service added', 'success');
+        } catch (error) {
+            showAlert('Error adding service: ' + error.message, 'error');
+        }
+    }
+    
+    displayServices();
+    displaySelectedServices();
+}
+
+// Display selected services
+function displaySelectedServices() {
+    const list = document.getElementById('selected-services-list');
+    list.innerHTML = '';
+    
+    if (Object.keys(userServices).length === 0) {
+        list.innerHTML = '<p>No services added yet. Click on service cards above to add them.</p>';
+        return;
+    }
+    
+    for (const [key, service] of Object.entries(userServices)) {
+        const item = document.createElement('div');
+        item.className = 'service-card';
+        item.id = `service-${key}`;
+        item.innerHTML = `
+            <h3>${service.name}</h3>
+            <p>Category: ${service.category}</p>
+            ${service.email ? `<p><strong>Email:</strong> ${service.email}</p>` : ''}
+            ${service.contact ? `<p><strong>Contact:</strong> ${service.contact}</p>` : ''}
+            ${service.phone ? `<p><strong>Phone:</strong> ${service.phone}</p>` : ''}
+            ${service.account ? `<p><strong>Account:</strong> ${service.account}</p>` : ''}
+            ${service.website ? `<p><strong>Website:</strong> ${service.website}</p>` : ''}
+            <div style="margin-top: 10px; display: flex; gap: 10px;">
+                <button class="btn btn-small" onclick="editService('${key}')">Edit</button>
+                <button class="btn btn-danger btn-small" onclick="removeService('${key}')">Remove</button>
+            </div>
+        `;
+        list.appendChild(item);
+    }
+}
+
+// Remove service
+async function removeService(serviceKey) {
+    if (!currentProfileId) return;
+    
+    try {
+        await apiCall(`/api/profiles/${currentProfileId}/services/${serviceKey}`, 'DELETE');
+        delete userServices[serviceKey];
+        displayServices();
+        displaySelectedServices();
+        showAlert('Service removed successfully', 'success');
+    } catch (error) {
+        showAlert('Error removing service: ' + error.message, 'error');
+    }
+}
+
+// Load profile services
+async function loadProfileServices() {
+    const profileId = document.getElementById('profile-select').value;
+    
+    if (!profileId) {
+        document.getElementById('services-section').classList.add('hidden');
+        return;
+    }
+    
+    try {
+        const profile = await apiCall(`/api/profiles/${profileId}`);
+        currentProfileId = profile.id;
+        userServices = profile.services || {};
+        document.getElementById('services-section').classList.remove('hidden');
+        displayServices();
+        displaySelectedServices();
+    } catch (error) {
+        showAlert('Error loading profile: ' + error.message, 'error');
+    }
+}
+
+// Show add service form
+function showAddServiceForm() {
+    document.getElementById('add-service-form').classList.remove('hidden');
+}
+
+// Hide add service form
+function hideAddServiceForm() {
+    document.getElementById('add-service-form').classList.add('hidden');
+    document.getElementById('custom-service-name').value = '';
+    document.getElementById('custom-service-email').value = '';
+    document.getElementById('custom-service-contact').value = '';
+    document.getElementById('custom-service-phone').value = '';
+    document.getElementById('custom-service-account').value = '';
+    document.getElementById('custom-service-website').value = '';
+}
+
+// Add custom service
+function addCustomService() {
+    const name = document.getElementById('custom-service-name').value;
+    const email = document.getElementById('custom-service-email').value;
+    const contact = document.getElementById('custom-service-contact').value;
+    const phone = document.getElementById('custom-service-phone').value;
+    const account = document.getElementById('custom-service-account').value;
+    const website = document.getElementById('custom-service-website').value;
+    
+    if (!name) {
+        showAlert('Please enter a service name', 'error');
+        return;
+    }
+    
+    if (!currentProfileId) {
+        showAlert('Please select a profile first', 'error');
+        return;
+    }
+    
+    const key = name.toLowerCase().replace(/\s+/g, '_');
+    userServices[key] = {
+        name: name,
+        category: 'custom',
+        email: email,
+        contact: contact,
+        phone: phone,
+        account: account,
+        website: website
+    };
+    
+    // Save to profile
+    apiCall(`/api/profiles/${currentProfileId}/services`, 'POST', {
+        service_key: key,
+        service_details: userServices[key]
+    }).then(() => {
+        displaySelectedServices();
+        hideAddServiceForm();
+        showAlert('Custom service added!', 'success');
+    }).catch(error => {
+        showAlert('Error adding service: ' + error.message, 'error');
+    });
+}
+
+// Edit service
+function editService(serviceKey) {
+    if (!currentProfileId) {
+        showAlert('Please select a profile first', 'error');
+        return;
+    }
+    
+    const service = userServices[serviceKey];
+    if (!service) {
+        showAlert('Service not found', 'error');
+        return;
+    }
+    
+    document.getElementById('edit-service-key').value = serviceKey;
+    document.getElementById('edit-service-name').value = service.name || '';
+    document.getElementById('edit-service-email').value = service.email || '';
+    document.getElementById('edit-service-contact').value = service.contact || '';
+    document.getElementById('edit-service-phone').value = service.phone || '';
+    document.getElementById('edit-service-account').value = service.account || '';
+    document.getElementById('edit-service-website').value = service.website || '';
+    
+    document.getElementById('edit-service-form').classList.remove('hidden');
+    document.getElementById('edit-service-form').scrollIntoView({ behavior: 'smooth' });
+}
+
+// Hide edit service form
+function hideEditServiceForm() {
+    document.getElementById('edit-service-form').classList.add('hidden');
+}
+
+// Save service edit
+async function saveServiceEdit() {
+    const serviceKey = document.getElementById('edit-service-key').value;
+    const name = document.getElementById('edit-service-name').value;
+    const email = document.getElementById('edit-service-email').value;
+    const contact = document.getElementById('edit-service-contact').value;
+    const phone = document.getElementById('edit-service-phone').value;
+    const account = document.getElementById('edit-service-account').value;
+    const website = document.getElementById('edit-service-website').value;
+    
+    if (!name) {
+        showAlert('Please enter a service name', 'error');
+        return;
+    }
+    
+    if (!currentProfileId) {
+        showAlert('Please select a profile first', 'error');
+        return;
+    }
+    
+    const serviceDetails = {
+        name: name,
+        email: email,
+        contact: contact,
+        phone: phone,
+        account: account,
+        website: website
+    };
+    
+    // Preserve category if it exists
+    if (userServices[serviceKey] && userServices[serviceKey].category) {
+        serviceDetails.category = userServices[serviceKey].category;
+    }
+    
+    try {
+        await apiCall(`/api/profiles/${currentProfileId}/services/${serviceKey}`, 'PUT', serviceDetails);
+        userServices[serviceKey] = { ...userServices[serviceKey], ...serviceDetails };
+        displaySelectedServices();
+        hideEditServiceForm();
+        showAlert('Service updated successfully!', 'success');
+    } catch (error) {
+        showAlert('Error updating service: ' + error.message, 'error');
+    }
+}
+
+// Get AI suggestions
+async function getAISuggestions() {
+    if (!currentProfileId) {
+        showAlert('Please select a profile first', 'error');
+        return;
+    }
+    
+    try {
+        const profile = await apiCall(`/api/profiles/${currentProfileId}`);
+        
+        const result = await apiCall('/api/ai/suggest-services', 'POST', {
+            profile: profile,
+            current_services: Object.keys(profile.services || {})
+        });
+        
+        if (result.suggestions) {
+            const container = document.getElementById('ai-suggestions');
+            container.innerHTML = '<div class="ai-suggestion"><h4>AI Suggestions</h4>';
+            
+            result.suggestions.forEach(suggestion => {
+                const btn = document.createElement('span');
+                btn.className = 'suggested-service';
+                btn.textContent = suggestion.name;
+                btn.onclick = async () => {
+                    try {
+                        await apiCall(`/api/profiles/${currentProfileId}/services`, 'POST', {
+                            service_key: suggestion.key,
+                            service_details: {
+                                name: suggestion.name,
+                                category: suggestion.category,
+                                email: '',
+                                contact: '',
+                                phone: '',
+                                account: '',
+                                website: ''
+                            }
+                        });
+                        userServices[suggestion.key] = {
+                            name: suggestion.name,
+                            category: suggestion.category,
+                            email: '',
+                            contact: '',
+                            phone: '',
+                            account: '',
+                            website: ''
+                        };
+                        displaySelectedServices();
+                        showAlert(`Added ${suggestion.name}`, 'success');
+                    } catch (error) {
+                        showAlert('Error adding service: ' + error.message, 'error');
+                    }
+                };
+                container.querySelector('.ai-suggestion').appendChild(btn);
+            });
+            
+            container.innerHTML += '</div>';
+        }
+    } catch (error) {
+        showAlert(error.message || 'AI suggestions not available. Make sure GEMINI_API_KEY is set.', 'error');
+    }
+}
+
+// Check for profile_id in URL
+document.addEventListener('DOMContentLoaded', () => {
+    loadServices();
+    loadProfileSelects();
+    
+    // Check if profile_id is in URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const profileId = urlParams.get('profile_id');
+    if (profileId) {
+        document.getElementById('profile-select').value = profileId;
+        loadProfileServices();
+    }
+});
+</script>
+{% endblock %}
+
