@@ -1,4 +1,4 @@
-// SwiftShift Movers - Prisma Schema for Neon Postgres
+// MoveEasE Movers - Prisma Schema for Neon Postgres
 
 generator client {
   provider        = "prisma-client-js"
