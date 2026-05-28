@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { signIn } from 'next-auth/react'
+import { signIn, getSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Logo } from '@/components/shared/Logo'
@@ -32,8 +32,14 @@ export default function LoginPage() {
       if (result?.error) {
         toast({ title: 'Login Failed', description: 'Invalid email or password', variant: 'destructive' })
       } else {
-        router.push('/')
-        router.refresh()
+        const session = await getSession()
+        if (session?.user?.role === 'ADMIN') {
+          router.push('/dashboard')
+        } else if (session?.user?.role === 'CUSTOMER') {
+          router.push('/portal')
+        } else {
+          router.push('/')
+        }
       }
     } catch {
       toast({ title: 'Error', description: 'Something went wrong. Please try again.', variant: 'destructive' })
