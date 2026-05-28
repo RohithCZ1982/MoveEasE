@@ -4,14 +4,13 @@ import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import Header from '@/components/admin/Header'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
+import { Label } from '@/components/ui/label'
 import { useToast } from '@/components/ui/use-toast'
 import { cn, formatCurrency, formatDate, getStatusColor } from '@/lib/utils'
-import { Plus, Search, FileText, Loader2, Eye, RefreshCw, CheckCircle, ArrowRight } from 'lucide-react'
+import { Plus, FileText, Loader2, Eye, RefreshCw, CheckCircle, ArrowRight, XCircle, AlertCircle } from 'lucide-react'
 import TruckLoader from '@/components/ui/TruckLoader'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
 interface Quotation {
   id: string
@@ -23,11 +22,14 @@ interface Quotation {
   shiftingDate?: string
   grandTotal: number
   createdAt: string
+  cancelReason?: string
   customer: { id: string; name: string; mobile: string }
   invoice?: { id: string; invoiceNumber: string }
 }
 
-const STATUS_OPTIONS = ['ALL', 'DRAFT', 'SENT', 'APPROVED', 'CONVERTED', 'CLOSED']
+const STATUS_OPTIONS = ['ALL', 'DRAFT', 'SENT', 'APPROVED', 'CONVERTED', 'CLOSED', 'CANCELLED']
+
+const CANCELLABLE = ['DRAFT', 'SENT', 'APPROVED']
 
 export default function QuotationsPage() {
   const { toast } = useToast()
@@ -36,6 +38,11 @@ export default function QuotationsPage() {
   const [loading, setLoading] = useState(true)
   const [statusFilter, setStatusFilter] = useState('ALL')
   const [actionLoading, setActionLoading] = useState<string | null>(null)
+
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false)
+  const [cancelTarget, setCancelTarget] = useState<Quotation | null>(null)
+  const [cancelReason, setCancelReason] = useState('')
+  const [cancelling, setCancelling] = useState(false)
 
   const fetchQuotations = useCallback(async () => {
     setLoading(true)
@@ -95,6 +102,40 @@ export default function QuotationsPage() {
     }
   }
 
+  function openCancelDialog(q: Quotation) {
+    setCancelTarget(q)
+    setCancelReason('')
+    setCancelDialogOpen(true)
+  }
+
+  async function handleCancel() {
+    if (!cancelTarget) return
+    if (!cancelReason.trim()) {
+      toast({ title: 'Reason required', description: 'Please enter a cancellation reason', variant: 'destructive' })
+      return
+    }
+    setCancelling(true)
+    try {
+      const res = await fetch(`/api/quotations/${cancelTarget.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'cancel', cancelReason }),
+      })
+      const data = await res.json()
+      if (res.ok) {
+        toast({ title: 'Quotation cancelled' })
+        setCancelDialogOpen(false)
+        fetchQuotations()
+      } else {
+        toast({ title: 'Error', description: data.error, variant: 'destructive' })
+      }
+    } catch {
+      toast({ title: 'Error', variant: 'destructive' })
+    } finally {
+      setCancelling(false)
+    }
+  }
+
   return (
     <div>
       <Header title="Quotations" subtitle={`${total} total quotations`} />
@@ -132,9 +173,11 @@ export default function QuotationsPage() {
           <div className="text-center py-16">
             <FileText className="mx-auto h-12 w-12 text-gray-300 mb-3" />
             <p className="text-gray-500">No quotations found</p>
-            <Link href="/quotations/new">
-              <Button className="mt-4">Create First Quotation</Button>
-            </Link>
+            {statusFilter === 'ALL' && (
+              <Link href="/quotations/new">
+                <Button className="mt-4">Create First Quotation</Button>
+              </Link>
+            )}
           </div>
         ) : (
           <div className="space-y-3">
@@ -156,6 +199,12 @@ export default function QuotationsPage() {
                           <p className="text-xs text-gray-500 mt-1">
                             {q.fromAddress} <ArrowRight className="inline h-3 w-3" /> {q.toAddress}
                           </p>
+                        )}
+                        {q.status === 'CANCELLED' && q.cancelReason && (
+                          <div className="flex items-start gap-1 mt-1.5">
+                            <AlertCircle className="h-3 w-3 text-red-400 mt-0.5 shrink-0" />
+                            <p className="text-xs text-red-500 italic">{q.cancelReason}</p>
+                          </div>
                         )}
                       </div>
                     </div>
@@ -218,6 +267,18 @@ export default function QuotationsPage() {
                             </Button>
                           </Link>
                         )}
+
+                        {CANCELLABLE.includes(q.status) && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-7 text-xs border-red-200 text-red-600 hover:bg-red-50"
+                            disabled={actionLoading === q.id}
+                            onClick={() => openCancelDialog(q)}
+                          >
+                            <XCircle className="mr-1 h-3 w-3" /> Cancel
+                          </Button>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -227,6 +288,42 @@ export default function QuotationsPage() {
           </div>
         )}
       </div>
+
+      {/* Cancel Dialog */}
+      <Dialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Cancel Quotation {cancelTarget?.quotationNumber}</DialogTitle>
+          </DialogHeader>
+          <div className="py-2 space-y-3">
+            <p className="text-sm text-gray-600">
+              This will permanently cancel the quotation for <strong>{cancelTarget?.customer.name}</strong>. Please provide a reason.
+            </p>
+            <div className="space-y-1">
+              <Label htmlFor="cancelReason">Cancellation Reason *</Label>
+              <textarea
+                id="cancelReason"
+                rows={3}
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring resize-none"
+                placeholder="e.g. Customer changed plans, Budget constraints..."
+                value={cancelReason}
+                onChange={(e) => setCancelReason(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCancelDialogOpen(false)}>Keep Quotation</Button>
+            <Button
+              onClick={handleCancel}
+              disabled={cancelling || !cancelReason.trim()}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              {cancelling ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <XCircle className="mr-2 h-4 w-4" />}
+              Confirm Cancel
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

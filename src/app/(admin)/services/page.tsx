@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { useToast } from '@/components/ui/use-toast'
 import { formatCurrency } from '@/lib/utils'
-import { Plus, Briefcase, Loader2 } from 'lucide-react'
+import { Plus, Briefcase, Loader2, Pencil, Trash2 } from 'lucide-react'
 import TruckLoader from '@/components/ui/TruckLoader'
 
 interface Service {
@@ -31,13 +31,19 @@ const SERVICE_TYPES = [
   { value: 'WAREHOUSE', label: 'Warehouse Storage' },
 ]
 
+const emptyForm = { name: '', type: 'LOCAL_SHIFT', description: '', baseRate: '' }
+
 export default function ServicesPage() {
   const { toast } = useToast()
   const [services, setServices] = useState<Service[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [deleting, setDeleting] = useState(false)
   const [dialogOpen, setDialogOpen] = useState(false)
-  const [form, setForm] = useState({ name: '', type: 'LOCAL_SHIFT', description: '', baseRate: '' })
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [editingService, setEditingService] = useState<Service | null>(null)
+  const [deletingService, setDeletingService] = useState<Service | null>(null)
+  const [form, setForm] = useState(emptyForm)
 
   const fetchServices = useCallback(async () => {
     setLoading(true)
@@ -54,6 +60,28 @@ export default function ServicesPage() {
 
   useEffect(() => { fetchServices() }, [fetchServices])
 
+  function openAdd() {
+    setEditingService(null)
+    setForm(emptyForm)
+    setDialogOpen(true)
+  }
+
+  function openEdit(service: Service) {
+    setEditingService(service)
+    setForm({
+      name: service.name,
+      type: service.type,
+      description: service.description ?? '',
+      baseRate: service.baseRate ? String(service.baseRate) : '',
+    })
+    setDialogOpen(true)
+  }
+
+  function openDelete(service: Service) {
+    setDeletingService(service)
+    setDeleteDialogOpen(true)
+  }
+
   async function handleSave() {
     if (!form.name) {
       toast({ title: 'Error', description: 'Service name required', variant: 'destructive' })
@@ -61,24 +89,46 @@ export default function ServicesPage() {
     }
     setSaving(true)
     try {
-      const res = await fetch('/api/services', {
-        method: 'POST',
+      const url = editingService ? `/api/services/${editingService.id}` : '/api/services'
+      const method = editingService ? 'PATCH' : 'POST'
+      const res = await fetch(url, {
+        method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...form,
-          baseRate: form.baseRate ? Number(form.baseRate) : null,
-        }),
+        body: JSON.stringify({ ...form, baseRate: form.baseRate ? Number(form.baseRate) : null }),
       })
       if (res.ok) {
-        toast({ title: 'Service added' })
+        toast({ title: editingService ? 'Service updated' : 'Service added' })
         setDialogOpen(false)
-        setForm({ name: '', type: 'LOCAL_SHIFT', description: '', baseRate: '' })
         fetchServices()
+      } else {
+        const data = await res.json()
+        toast({ title: 'Error', description: data.error, variant: 'destructive' })
       }
     } catch {
       toast({ title: 'Error', variant: 'destructive' })
     } finally {
       setSaving(false)
+    }
+  }
+
+  async function handleDelete() {
+    if (!deletingService) return
+    setDeleting(true)
+    try {
+      const res = await fetch(`/api/services/${deletingService.id}`, { method: 'DELETE' })
+      const data = await res.json()
+      if (res.ok) {
+        toast({ title: 'Service deleted' })
+        setDeleteDialogOpen(false)
+        fetchServices()
+      } else {
+        toast({ title: 'Cannot delete', description: data.error, variant: 'destructive' })
+        setDeleteDialogOpen(false)
+      }
+    } catch {
+      toast({ title: 'Error', variant: 'destructive' })
+    } finally {
+      setDeleting(false)
     }
   }
 
@@ -97,7 +147,7 @@ export default function ServicesPage() {
 
       <div className="p-6 space-y-4">
         <div className="flex justify-end">
-          <Button onClick={() => setDialogOpen(true)}>
+          <Button onClick={openAdd}>
             <Plus className="mr-2 h-4 w-4" /> Add Service
           </Button>
         </div>
@@ -114,9 +164,27 @@ export default function ServicesPage() {
                       <Briefcase className="h-5 w-5 text-blue-600" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-gray-800">{service.name}</p>
+                      <div className="flex items-start justify-between gap-2">
+                        <p className="font-semibold text-gray-800">{service.name}</p>
+                        <div className="flex gap-1 shrink-0">
+                          <button
+                            onClick={() => openEdit(service)}
+                            className="p-1 rounded hover:bg-gray-100 text-gray-400 hover:text-blue-600 transition-colors"
+                            title="Edit"
+                          >
+                            <Pencil className="h-3.5 w-3.5" />
+                          </button>
+                          <button
+                            onClick={() => openDelete(service)}
+                            className="p-1 rounded hover:bg-gray-100 text-gray-400 hover:text-red-600 transition-colors"
+                            title="Delete"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      </div>
                       <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${typeColors[service.type] || 'bg-gray-50 text-gray-700'}`}>
-                        {service.type.replace('_', ' ')}
+                        {service.type.replace(/_/g, ' ')}
                       </span>
                       {service.description && (
                         <p className="text-xs text-gray-500 mt-1">{service.description}</p>
@@ -135,9 +203,12 @@ export default function ServicesPage() {
         )}
       </div>
 
+      {/* Add / Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent>
-          <DialogHeader><DialogTitle>Add New Service</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle>{editingService ? 'Edit Service' : 'Add New Service'}</DialogTitle>
+          </DialogHeader>
           <div className="space-y-3 py-2">
             <div className="space-y-1">
               <Label>Service Name *</Label>
@@ -181,7 +252,30 @@ export default function ServicesPage() {
             <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
             <Button onClick={handleSave} disabled={saving}>
               {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-              Add Service
+              {editingService ? 'Save Changes' : 'Add Service'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Service</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-gray-600 py-2">
+            Are you sure you want to delete <strong>{deletingService?.name}</strong>? This cannot be undone.
+          </p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
+            <Button
+              onClick={handleDelete}
+              disabled={deleting}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              {deleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
+              Delete
             </Button>
           </DialogFooter>
         </DialogContent>

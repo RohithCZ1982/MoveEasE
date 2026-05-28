@@ -181,6 +181,29 @@ export async function PATCH(req: Request, { params }: { params: Params }) {
       return NextResponse.json(quotation)
     }
 
+    if (action === 'cancel') {
+      const { cancelReason } = body
+      if (!cancelReason?.trim()) {
+        return NextResponse.json({ error: 'A cancellation reason is required' }, { status: 400 })
+      }
+
+      const quotation = await prisma.quotation.findUnique({ where: { id } })
+      if (!quotation) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+
+      if (['CONVERTED', 'CLOSED', 'CANCELLED'].includes(quotation.status)) {
+        return NextResponse.json(
+          { error: `Cannot cancel a quotation with status ${quotation.status}` },
+          { status: 400 }
+        )
+      }
+
+      const updated = await prisma.quotation.update({
+        where: { id },
+        data: { status: 'CANCELLED', cancelReason: cancelReason.trim() },
+      })
+      return NextResponse.json(updated)
+    }
+
     return NextResponse.json({ error: 'Invalid action' }, { status: 400 })
   } catch (error) {
     console.error(error)

@@ -6,13 +6,17 @@ import Link from 'next/link'
 import Header from '@/components/admin/Header'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
+import { Label } from '@/components/ui/label'
 import { useToast } from '@/components/ui/use-toast'
 import { cn, formatCurrency, formatDate, getStatusColor } from '@/lib/utils'
-import { Loader2, Download, ArrowLeft, FileText, CheckCircle, RefreshCw, Printer } from 'lucide-react'
+import { Loader2, Download, ArrowLeft, FileText, CheckCircle, RefreshCw, Printer, XCircle, AlertCircle } from 'lucide-react'
 import dynamic from 'next/dynamic'
 import TruckLoader from '@/components/ui/TruckLoader'
 
 const QuotationPDFButton = dynamic(() => import('@/components/pdf/QuotationPDFButton'), { ssr: false })
+
+const CANCELLABLE = ['DRAFT', 'SENT', 'APPROVED']
 
 export default function QuotationDetailPage() {
   const { id } = useParams()
@@ -21,6 +25,10 @@ export default function QuotationDetailPage() {
   const [quotation, setQuotation] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [actionLoading, setActionLoading] = useState(false)
+
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false)
+  const [cancelReason, setCancelReason] = useState('')
+  const [cancelling, setCancelling] = useState(false)
 
   useEffect(() => {
     fetch(`/api/quotations/${id}`)
@@ -68,6 +76,33 @@ export default function QuotationDetailPage() {
       toast({ title: 'Error', variant: 'destructive' })
     } finally {
       setActionLoading(false)
+    }
+  }
+
+  async function handleCancel() {
+    if (!cancelReason.trim()) {
+      toast({ title: 'Reason required', description: 'Please enter a cancellation reason', variant: 'destructive' })
+      return
+    }
+    setCancelling(true)
+    try {
+      const res = await fetch(`/api/quotations/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'cancel', cancelReason }),
+      })
+      const data = await res.json()
+      if (res.ok) {
+        toast({ title: 'Quotation cancelled' })
+        setCancelDialogOpen(false)
+        setQuotation(data)
+      } else {
+        toast({ title: 'Error', description: data.error, variant: 'destructive' })
+      }
+    } catch {
+      toast({ title: 'Error', variant: 'destructive' })
+    } finally {
+      setCancelling(false)
     }
   }
 
@@ -130,18 +165,44 @@ export default function QuotationDetailPage() {
               </Link>
             )}
             <QuotationPDFButton quotation={quotation} />
+            {CANCELLABLE.includes(quotation.status) && (
+              <Button
+                variant="outline"
+                className="border-red-200 text-red-600 hover:bg-red-50"
+                onClick={() => { setCancelReason(''); setCancelDialogOpen(true) }}
+                disabled={actionLoading}
+              >
+                <XCircle className="mr-2 h-4 w-4" /> Cancel Quotation
+              </Button>
+            )}
           </div>
         </div>
 
         {/* Status Badge */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
           <span className={cn('px-3 py-1 rounded-full text-sm font-semibold', getStatusColor(quotation.status))}>
             {quotation.status}
           </span>
+          {quotation.status === 'CLOSED' && (
+            <span className="inline-flex items-center gap-1.5 text-sm text-teal-700 font-medium">
+              <CheckCircle className="h-4 w-4" /> Fully paid & closed
+            </span>
+          )}
           {quotation.validUntil && (
             <span className="text-sm text-gray-500">Valid until: {formatDate(quotation.validUntil)}</span>
           )}
         </div>
+
+        {/* Cancel Reason Banner */}
+        {quotation.status === 'CANCELLED' && quotation.cancelReason && (
+          <div className="flex items-start gap-3 p-4 rounded-lg bg-red-50 border border-red-200">
+            <AlertCircle className="h-5 w-5 text-red-500 shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-semibold text-red-700">Cancellation Reason</p>
+              <p className="text-sm text-red-600 mt-0.5">{quotation.cancelReason}</p>
+            </div>
+          </div>
+        )}
 
         {/* Quotation Header */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
@@ -250,6 +311,42 @@ export default function QuotationDetailPage() {
           </Card>
         )}
       </div>
+
+      {/* Cancel Dialog */}
+      <Dialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Cancel Quotation {quotation.quotationNumber}</DialogTitle>
+          </DialogHeader>
+          <div className="py-2 space-y-3">
+            <p className="text-sm text-gray-600">
+              This will permanently cancel the quotation for <strong>{quotation.customer?.name}</strong>. Please provide a reason.
+            </p>
+            <div className="space-y-1">
+              <Label htmlFor="cancelReason">Cancellation Reason *</Label>
+              <textarea
+                id="cancelReason"
+                rows={3}
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring resize-none"
+                placeholder="e.g. Customer changed plans, Budget constraints..."
+                value={cancelReason}
+                onChange={(e) => setCancelReason(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCancelDialogOpen(false)}>Keep Quotation</Button>
+            <Button
+              onClick={handleCancel}
+              disabled={cancelling || !cancelReason.trim()}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              {cancelling ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <XCircle className="mr-2 h-4 w-4" />}
+              Confirm Cancel
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

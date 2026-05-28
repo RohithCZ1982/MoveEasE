@@ -44,22 +44,35 @@ export async function PATCH(req: Request, { params }: { params: Params }) {
 
     const newPaidAmount = paidAmount !== undefined ? paidAmount : Number(invoice.paidAmount)
     const dueAmount = Number(invoice.grandTotal) - newPaidAmount
+    const newStatus = status || invoice.status
 
-    const updated = await prisma.invoice.update({
-      where: { id },
-      data: {
-        status: status || invoice.status,
-        paidAmount: newPaidAmount,
-        dueAmount: Math.max(0, dueAmount),
-        paymentMode,
-        paymentDate: paymentDate ? new Date(paymentDate) : null,
-        dueDate: dueDate ? new Date(dueDate) : null,
-        notes,
-      },
-      include: {
-        quotation: { include: { customer: true } },
-        items: true,
-      },
+    const updated = await prisma.$transaction(async (tx) => {
+      const inv = await tx.invoice.update({
+        where: { id },
+        data: {
+          status: newStatus,
+          paidAmount: newPaidAmount,
+          dueAmount: Math.max(0, dueAmount),
+          paymentMode,
+          paymentDate: paymentDate ? new Date(paymentDate) : null,
+          dueDate: dueDate ? new Date(dueDate) : null,
+          notes,
+        },
+        include: {
+          quotation: { include: { customer: true } },
+          items: true,
+        },
+      })
+
+      // Auto-close the quotation when invoice is fully paid
+      if (newStatus === 'PAID') {
+        await tx.quotation.update({
+          where: { id: inv.quotation.id },
+          data: { status: 'CLOSED' },
+        })
+      }
+
+      return inv
     })
 
     return NextResponse.json(updated)
