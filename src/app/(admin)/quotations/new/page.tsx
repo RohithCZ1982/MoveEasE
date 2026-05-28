@@ -14,7 +14,7 @@ import { useQuotationStore, QuotationItem } from '@/store'
 import AddCustomerModal from '@/components/admin/AddCustomerModal'
 import { formatCurrency } from '@/lib/utils'
 import {
-  Plus, Trash2, Search, UserPlus, Loader2, ChevronDown, Package,
+  Plus, Trash2, Search, UserPlus, Loader2, ChevronDown, Package, Pencil, Check, X,
 } from 'lucide-react'
 
 interface Customer { id: string; name: string; mobile: string; email?: string }
@@ -48,6 +48,8 @@ export default function NewQuotationPage() {
   const [addCustomerOpen, setAddCustomerOpen] = useState(false)
   const [saving, setSaving] = useState(false)
   const [status, setStatus] = useState<'DRAFT' | 'SENT'>('DRAFT')
+  const [editingTotal, setEditingTotal] = useState(false)
+  const [manualTotal, setManualTotal] = useState('')
 
   useEffect(() => {
     reset()
@@ -119,12 +121,14 @@ export default function NewQuotationPage() {
       return
     }
 
+    const finalTotal = manualTotal !== '' ? parseFloat(manualTotal) : form.grandTotal
+
     setSaving(true)
     try {
       const res = await fetch('/api/quotations', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...form, status: saveStatus }),
+        body: JSON.stringify({ ...form, grandTotal: finalTotal, status: saveStatus }),
       })
       const data = await res.json()
       if (!res.ok) {
@@ -485,9 +489,59 @@ export default function NewQuotationPage() {
                   <span>{formatCurrency(form.gstAmount)}</span>
                 </div>
 
-                <div className="border-t pt-2 flex justify-between font-bold text-base">
-                  <span>Grand Total</span>
-                  <span className="text-blue-700">{formatCurrency(form.grandTotal)}</span>
+                <div className="border-t pt-2">
+                  {editingTotal ? (
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-bold text-base">Grand Total</span>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-gray-400 text-sm">₹</span>
+                        <Input
+                          type="number"
+                          min="0"
+                          step="1"
+                          value={manualTotal}
+                          onChange={(e) => setManualTotal(e.target.value)}
+                          className="h-8 w-32 text-sm font-bold text-blue-700"
+                          autoFocus
+                        />
+                        <button
+                          onClick={() => setEditingTotal(false)}
+                          className="p-1 rounded hover:bg-green-50 text-green-600"
+                          title="Confirm"
+                        >
+                          <Check className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => { setManualTotal(''); setEditingTotal(false) }}
+                          className="p-1 rounded hover:bg-red-50 text-red-400"
+                          title="Reset to calculated"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-base">Grand Total</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-blue-700 font-bold text-base">
+                          {formatCurrency(manualTotal !== '' ? parseFloat(manualTotal) || 0 : form.grandTotal)}
+                        </span>
+                        <button
+                          onClick={() => { setManualTotal(String(Math.round(manualTotal !== '' ? parseFloat(manualTotal) || form.grandTotal : form.grandTotal))); setEditingTotal(true) }}
+                          className="p-1 rounded hover:bg-gray-100 text-gray-400 hover:text-blue-600"
+                          title="Edit total"
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                  {manualTotal !== '' && Math.abs(parseFloat(manualTotal) - form.grandTotal) > 0.01 && (
+                    <p className="text-xs text-orange-500 mt-1 text-right">
+                      Calculated: {formatCurrency(form.grandTotal)}
+                    </p>
+                  )}
                 </div>
               </div>
             </CardContent>

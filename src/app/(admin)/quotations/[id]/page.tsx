@@ -13,6 +13,7 @@ import { cn, formatCurrency, formatDate, getStatusColor } from '@/lib/utils'
 import { Loader2, Download, ArrowLeft, FileText, CheckCircle, RefreshCw, Printer, XCircle, AlertCircle } from 'lucide-react'
 import dynamic from 'next/dynamic'
 import TruckLoader from '@/components/ui/TruckLoader'
+import ConvertToInvoiceDialog from '@/components/admin/ConvertToInvoiceDialog'
 
 const QuotationPDFButton = dynamic(() => import('@/components/pdf/QuotationPDFButton'), { ssr: false })
 
@@ -29,6 +30,7 @@ export default function QuotationDetailPage() {
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false)
   const [cancelReason, setCancelReason] = useState('')
   const [cancelling, setCancelling] = useState(false)
+  const [convertDialogOpen, setConvertDialogOpen] = useState(false)
 
   useEffect(() => {
     fetch(`/api/quotations/${id}`)
@@ -57,27 +59,6 @@ export default function QuotationDetailPage() {
     }
   }
 
-  async function convertToInvoice() {
-    setActionLoading(true)
-    try {
-      const res = await fetch(`/api/quotations/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'convert' }),
-      })
-      const data = await res.json()
-      if (res.ok) {
-        toast({ title: 'Invoice created!', description: `Invoice #${data.invoiceNumber}` })
-        router.push(`/invoices/${data.id}`)
-      } else {
-        toast({ title: 'Error', description: data.error, variant: 'destructive' })
-      }
-    } catch {
-      toast({ title: 'Error', variant: 'destructive' })
-    } finally {
-      setActionLoading(false)
-    }
-  }
 
   async function handleCancel() {
     if (!cancelReason.trim()) {
@@ -150,10 +131,9 @@ export default function QuotationDetailPage() {
             {quotation.status === 'APPROVED' && !quotation.invoice && (
               <Button
                 className="bg-purple-600 hover:bg-purple-700"
-                onClick={convertToInvoice}
+                onClick={() => setConvertDialogOpen(true)}
                 disabled={actionLoading}
               >
-                {actionLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                 Convert to Invoice
               </Button>
             )}
@@ -311,6 +291,29 @@ export default function QuotationDetailPage() {
           </Card>
         )}
       </div>
+
+      {/* Convert to Invoice Dialog */}
+      {quotation && (
+        <ConvertToInvoiceDialog
+          open={convertDialogOpen}
+          onClose={() => setConvertDialogOpen(false)}
+          onSuccess={(invoiceId, invoiceNumber) => {
+            toast({ title: 'Invoice created!', description: `Invoice #${invoiceNumber}` })
+            router.push(`/invoices/${invoiceId}`)
+          }}
+          quotation={{
+            id: quotation.id,
+            quotationNumber: quotation.quotationNumber,
+            subtotal: Number(quotation.subtotal),
+            discountType: quotation.discountType,
+            discountValue: Number(quotation.discountValue),
+            discountAmount: Number(quotation.discountAmount),
+            gstRate: Number(quotation.gstRate),
+            gstAmount: Number(quotation.gstAmount),
+            grandTotal: Number(quotation.grandTotal),
+          }}
+        />
+      )}
 
       {/* Cancel Dialog */}
       <Dialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>

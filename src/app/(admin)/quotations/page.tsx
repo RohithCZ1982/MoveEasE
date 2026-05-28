@@ -11,6 +11,7 @@ import { useToast } from '@/components/ui/use-toast'
 import { cn, formatCurrency, formatDate, getStatusColor } from '@/lib/utils'
 import { Plus, FileText, Loader2, Eye, RefreshCw, CheckCircle, ArrowRight, XCircle, AlertCircle } from 'lucide-react'
 import TruckLoader from '@/components/ui/TruckLoader'
+import ConvertToInvoiceDialog from '@/components/admin/ConvertToInvoiceDialog'
 
 interface Quotation {
   id: string
@@ -20,6 +21,12 @@ interface Quotation {
   fromAddress: string
   toAddress: string
   shiftingDate?: string
+  subtotal: number
+  discountType: string
+  discountValue: number
+  discountAmount: number
+  gstRate: number
+  gstAmount: number
   grandTotal: number
   createdAt: string
   cancelReason?: string
@@ -43,6 +50,7 @@ export default function QuotationsPage() {
   const [cancelTarget, setCancelTarget] = useState<Quotation | null>(null)
   const [cancelReason, setCancelReason] = useState('')
   const [cancelling, setCancelling] = useState(false)
+  const [convertTarget, setConvertTarget] = useState<Quotation | null>(null)
 
   const fetchQuotations = useCallback(async () => {
     setLoading(true)
@@ -80,27 +88,6 @@ export default function QuotationsPage() {
     }
   }
 
-  async function convertToInvoice(id: string) {
-    setActionLoading(id)
-    try {
-      const res = await fetch(`/api/quotations/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'convert' }),
-      })
-      const data = await res.json()
-      if (res.ok) {
-        toast({ title: 'Invoice created!', description: `Invoice #${data.invoiceNumber}` })
-        fetchQuotations()
-      } else {
-        toast({ title: 'Error', description: data.error, variant: 'destructive' })
-      }
-    } catch {
-      toast({ title: 'Error', description: 'Failed to convert', variant: 'destructive' })
-    } finally {
-      setActionLoading(null)
-    }
-  }
 
   function openCancelDialog(q: Quotation) {
     setCancelTarget(q)
@@ -252,10 +239,8 @@ export default function QuotationsPage() {
                           <Button
                             size="sm"
                             className="h-7 text-xs bg-purple-600 hover:bg-purple-700"
-                            disabled={actionLoading === q.id}
-                            onClick={() => convertToInvoice(q.id)}
+                            onClick={() => setConvertTarget(q)}
                           >
-                            {actionLoading === q.id ? <Loader2 className="h-3 w-3 animate-spin" /> : null}
                             Convert to Invoice
                           </Button>
                         )}
@@ -288,6 +273,30 @@ export default function QuotationsPage() {
           </div>
         )}
       </div>
+
+      {/* Convert to Invoice Dialog */}
+      {convertTarget && (
+        <ConvertToInvoiceDialog
+          open={!!convertTarget}
+          onClose={() => setConvertTarget(null)}
+          onSuccess={(_, invoiceNumber) => {
+            toast({ title: 'Invoice created!', description: `Invoice #${invoiceNumber}` })
+            setConvertTarget(null)
+            fetchQuotations()
+          }}
+          quotation={{
+            id: convertTarget.id,
+            quotationNumber: convertTarget.quotationNumber,
+            subtotal: Number(convertTarget.subtotal),
+            discountType: convertTarget.discountType,
+            discountValue: Number(convertTarget.discountValue),
+            discountAmount: Number(convertTarget.discountAmount),
+            gstRate: Number(convertTarget.gstRate),
+            gstAmount: Number(convertTarget.gstAmount),
+            grandTotal: Number(convertTarget.grandTotal),
+          }}
+        />
+      )}
 
       {/* Cancel Dialog */}
       <Dialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>

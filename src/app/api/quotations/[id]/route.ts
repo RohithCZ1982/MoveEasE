@@ -129,9 +129,28 @@ export async function PATCH(req: Request, { params }: { params: Params }) {
         return NextResponse.json({ error: 'Invoice already exists' }, { status: 400 })
       }
 
+      // Accept optional overrides from the pre-convert dialog
+      const finalDiscountType = body.discountType ?? quotation.discountType
+      const finalDiscountAmount = body.discountAmount !== undefined ? body.discountAmount : Number(quotation.discountAmount)
+      const finalGstAmount = body.gstAmount !== undefined ? body.gstAmount : Number(quotation.gstAmount)
+      const finalGrandTotal = body.grandTotal !== undefined ? body.grandTotal : Number(quotation.grandTotal)
+
       const invoiceNumber = generateInvoiceNumber()
 
       const invoice = await prisma.$transaction(async (tx) => {
+        // Update quotation with final discount/total values
+        await tx.quotation.update({
+          where: { id },
+          data: {
+            discountType: finalDiscountType,
+            discountValue: body.discountValue !== undefined ? body.discountValue : quotation.discountValue,
+            discountAmount: finalDiscountAmount,
+            gstAmount: finalGstAmount,
+            grandTotal: finalGrandTotal,
+            status: 'CONVERTED',
+          },
+        })
+
         const inv = await tx.invoice.create({
           data: {
             invoiceNumber,
@@ -142,11 +161,11 @@ export async function PATCH(req: Request, { params }: { params: Params }) {
             insuranceAmount: quotation.insuranceAmount,
             packingCharges: quotation.packingCharges,
             subtotal: quotation.subtotal,
-            discountAmount: quotation.discountAmount,
-            gstAmount: quotation.gstAmount,
-            grandTotal: quotation.grandTotal,
+            discountAmount: finalDiscountAmount,
+            gstAmount: finalGstAmount,
+            grandTotal: finalGrandTotal,
             paidAmount: 0,
-            dueAmount: quotation.grandTotal,
+            dueAmount: finalGrandTotal,
           },
         })
 
@@ -159,11 +178,6 @@ export async function PATCH(req: Request, { params }: { params: Params }) {
             rate: item.rate,
             amount: item.amount,
           })),
-        })
-
-        await tx.quotation.update({
-          where: { id },
-          data: { status: 'CONVERTED' },
         })
 
         return inv
