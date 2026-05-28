@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge'
 import { useToast } from '@/components/ui/use-toast'
 import { cn, formatCurrency, formatDate, getStatusColor } from '@/lib/utils'
 import { Plus, Search, FileText, Loader2, Eye, RefreshCw, CheckCircle, ArrowRight } from 'lucide-react'
+import TruckLoader from '@/components/ui/TruckLoader'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
 interface Quotation {
@@ -39,8 +40,8 @@ export default function QuotationsPage() {
   const fetchQuotations = useCallback(async () => {
     setLoading(true)
     try {
-      const params = statusFilter !== 'ALL' ? `?status=${statusFilter}` : ''
-      const res = await fetch(`/api/quotations${params}&limit=50`)
+      const params = statusFilter !== 'ALL' ? `?status=${statusFilter}&limit=50` : '?limit=50'
+      const res = await fetch(`/api/quotations${params}`)
       const data = await res.json()
       setQuotations(data.quotations || [])
       setTotal(data.total || 0)
@@ -124,8 +125,8 @@ export default function QuotationsPage() {
         </div>
 
         {loading ? (
-          <div className="flex justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+          <div className="flex justify-center py-8">
+            <TruckLoader />
           </div>
         ) : quotations.length === 0 ? (
           <div className="text-center py-16">

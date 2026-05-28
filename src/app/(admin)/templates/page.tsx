@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { useToast } from '@/components/ui/use-toast'
 import { formatCurrency } from '@/lib/utils'
 import { Plus, Edit, Trash2, Layers, Loader2, X } from 'lucide-react'
+import TruckLoader from '@/components/ui/TruckLoader'
 
 interface ItemMaster { id: string; name: string; unit: string; defaultRate: number }
 interface TemplateItem { itemId: string; quantity: number; rate: number; item?: ItemMaster }
@@ -134,8 +135,8 @@ export default function TemplatesPage() {
         </div>
 
         {loading ? (
-          <div className="flex justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+          <div className="flex justify-center py-8">
+            <TruckLoader />
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -147,7 +148,12 @@ export default function TemplatesPage() {
                       <Layers className="h-5 w-5 text-orange-500" />
                     </div>
                     <div>
-                      <CardTitle className="text-base">{template.name}</CardTitle>
+                      <div className="flex items-center gap-2">
+                        <CardTitle className="text-base">{template.name}</CardTitle>
+                        <span className="text-sm font-semibold text-blue-700">
+                          {formatCurrency(template.items.reduce((sum, ti) => sum + Number(ti.quantity) * Number(ti.rate), 0))}
+                        </span>
+                      </div>
                       {template.description && (
                         <p className="text-xs text-gray-400 mt-0.5">{template.description}</p>
                       )}

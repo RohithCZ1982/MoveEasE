@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { cn, formatCurrency, formatDate, getStatusColor } from '@/lib/utils'
 import { FileText, Receipt, Loader2, Download, ArrowRight, Phone } from 'lucide-react'
+import TruckLoader from '@/components/ui/TruckLoader'
 import dynamic from 'next/dynamic'
 
 const QuotationPDFButton = dynamic(() => import('@/components/pdf/QuotationPDFButton'), { ssr: false })
@@ -72,8 +73,8 @@ export default function CustomerPortal() {
       </div>
 
       {loading ? (
-        <div className="flex justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+        <div className="flex justify-center py-8">
+          <TruckLoader />
         </div>
       ) : tab === 'quotations' ? (
         <div className="space-y-3">

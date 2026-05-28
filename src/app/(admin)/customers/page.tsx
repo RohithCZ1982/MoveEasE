@@ -15,6 +15,7 @@ import { formatDate } from '@/lib/utils'
 import {
   Plus, Search, Edit, Trash2, Phone, Mail, MapPin, Loader2, Users,
 } from 'lucide-react'
+import TruckLoader from '@/components/ui/TruckLoader'
 
 interface Customer {
   id: string
@@ -163,8 +164,8 @@ export default function CustomersPage() {
         </div>
 
         {loading ? (
-          <div className="flex justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+          <div className="flex justify-center py-8">
+            <TruckLoader />
           </div>
         ) : customers.length === 0 ? (
           <div className="text-center py-16">

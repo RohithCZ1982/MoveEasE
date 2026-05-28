@@ -10,6 +10,7 @@ import { useToast } from '@/components/ui/use-toast'
 import { cn, formatCurrency, formatDate, getStatusColor } from '@/lib/utils'
 import { Loader2, Download, ArrowLeft, FileText, CheckCircle, RefreshCw, Printer } from 'lucide-react'
 import dynamic from 'next/dynamic'
+import TruckLoader from '@/components/ui/TruckLoader'
 
 const QuotationPDFButton = dynamic(() => import('@/components/pdf/QuotationPDFButton'), { ssr: false })
 
@@ -73,7 +74,7 @@ export default function QuotationDetailPage() {
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+        <TruckLoader />
       </div>
     )
   }

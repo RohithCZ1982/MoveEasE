@@ -8,6 +8,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { useToast } from '@/components/ui/use-toast'
 import { cn, formatCurrency, formatDate, getStatusColor } from '@/lib/utils'
 import { Receipt, Loader2, Eye, ArrowRight } from 'lucide-react'
+import TruckLoader from '@/components/ui/TruckLoader'
 
 interface Invoice {
   id: string
@@ -39,8 +40,8 @@ export default function InvoicesPage() {
   const fetchInvoices = useCallback(async () => {
     setLoading(true)
     try {
-      const params = statusFilter !== 'ALL' ? `?status=${statusFilter}` : ''
-      const res = await fetch(`/api/invoices${params}&limit=50`)
+      const params = statusFilter !== 'ALL' ? `?status=${statusFilter}&limit=50` : '?limit=50'
+      const res = await fetch(`/api/invoices${params}`)
       const data = await res.json()
       setInvoices(data.invoices || [])
       setTotal(data.total || 0)
@@ -74,8 +75,8 @@ export default function InvoicesPage() {
         </div>
 
         {loading ? (
-          <div className="flex justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+          <div className="flex justify-center py-8">
+            <TruckLoader />
           </div>
         ) : invoices.length === 0 ? (
           <div className="text-center py-16">

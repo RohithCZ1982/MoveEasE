@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge'
 import { useToast } from '@/components/ui/use-toast'
 import { formatCurrency } from '@/lib/utils'
 import { Plus, Truck, Users, Loader2 } from 'lucide-react'
+import TruckLoader from '@/components/ui/TruckLoader'
 
 interface TruckAsset { id: string; registrationNo: string; model: string; capacity?: string; isAvailable: boolean }
 interface Loader { id: string; name: string; mobile: string; isAvailable: boolean; dailyRate?: number }
@@ -113,7 +114,7 @@ export default function AssetsPage() {
           </div>
 
           {loading ? (
-            <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-blue-600" /></div>
+            <div className="flex justify-center py-8"><TruckLoader /></div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {trucks.map((truck) => (

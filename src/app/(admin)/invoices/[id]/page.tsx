@@ -10,8 +10,9 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useToast } from '@/components/ui/use-toast'
 import { cn, formatCurrency, formatDate, getStatusColor } from '@/lib/utils'
-import { Loader2, ArrowLeft, XCircle } from 'lucide-react'
+import { Loader2, ArrowLeft, XCircle, CheckCircle } from 'lucide-react'
 import dynamic from 'next/dynamic'
+import TruckLoader from '@/components/ui/TruckLoader'
 
 const InvoicePDFButton = dynamic(() => import('@/components/pdf/InvoicePDFButton'), { ssr: false })
 
@@ -23,6 +24,10 @@ export default function InvoiceDetailPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [cancelling, setCancelling] = useState(false)
+  const [completing, setCompleting] = useState(false)
+  const [showCompletePanel, setShowCompletePanel] = useState(false)
+  const [completeMode, setCompleteMode] = useState('')
+  const [completeDate, setCompleteDate] = useState(new Date().toISOString().split('T')[0])
   const [payment, setPayment] = useState({
     status: '',
     paidAmount: '',
@@ -74,6 +79,42 @@ export default function InvoiceDetailPage() {
     }
   }
 
+  async function handleComplete() {
+    setCompleting(true)
+    try {
+      const res = await fetch(`/api/invoices/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          status: 'PAID',
+          paidAmount: Number(invoice.grandTotal),
+          paymentMode: completeMode || undefined,
+          paymentDate: completeDate || null,
+        }),
+      })
+      const data = await res.json()
+      if (res.ok) {
+        setInvoice(data)
+        setPayment({
+          status: 'PAID',
+          paidAmount: data.paidAmount?.toString() || '0',
+          paymentMode: data.paymentMode || '',
+          paymentDate: data.paymentDate ? data.paymentDate.split('T')[0] : '',
+          dueDate: data.dueDate ? data.dueDate.split('T')[0] : '',
+          notes: data.notes || '',
+        })
+        setShowCompletePanel(false)
+        toast({ title: 'Invoice completed', description: 'Marked as fully paid' })
+      } else {
+        toast({ title: 'Error', description: data.error, variant: 'destructive' })
+      }
+    } catch {
+      toast({ title: 'Error', variant: 'destructive' })
+    } finally {
+      setCompleting(false)
+    }
+  }
+
   async function handleUpdate() {
     setSaving(true)
     try {
@@ -104,7 +145,7 @@ export default function InvoiceDetailPage() {
   }
 
   if (loading) {
-    return <div className="flex justify-center items-center min-h-screen"><Loader2 className="h-8 w-8 animate-spin text-blue-600" /></div>
+    return <div className="flex justify-center items-center min-h-screen"><TruckLoader /></div>
   }
 
   if (!invoice || invoice.error) {
@@ -123,8 +164,19 @@ export default function InvoiceDetailPage() {
           <Button variant="ghost" onClick={() => router.back()}>
             <ArrowLeft className="mr-2 h-4 w-4" /> Back
           </Button>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             <InvoicePDFButton invoice={invoice} />
+            {invoice.status !== 'CANCELLED' && invoice.status !== 'PAID' && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="border-green-600 text-green-700 hover:bg-green-50"
+                onClick={() => setShowCompletePanel(v => !v)}
+              >
+                <CheckCircle className="mr-2 h-4 w-4" />
+                Complete Invoice
+              </Button>
+            )}
             {invoice.status !== 'CANCELLED' && invoice.status !== 'PAID' && (
               <Button variant="destructive" size="sm" onClick={handleCancel} disabled={cancelling}>
                 {cancelling ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <XCircle className="mr-2 h-4 w-4" />}
@@ -134,12 +186,69 @@ export default function InvoiceDetailPage() {
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
           <span className={cn('px-3 py-1 rounded-full text-sm font-semibold', getStatusColor(invoice.status))}>
             {invoice.status}
           </span>
+          {invoice.status === 'PAID' && (
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-semibold bg-green-100 text-green-800">
+              <CheckCircle className="h-3.5 w-3.5" /> Completed
+            </span>
+          )}
           <span className="text-sm text-gray-500">Created: {formatDate(invoice.createdAt)}</span>
         </div>
+
+        {showCompletePanel && invoice.status !== 'PAID' && invoice.status !== 'CANCELLED' && (
+          <Card className="border-green-200 bg-green-50">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm text-green-800 flex items-center gap-2">
+                <CheckCircle className="h-4 w-4" /> Complete Invoice – Mark as Fully Paid
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <p className="text-sm text-green-700">
+                This will record full payment of <span className="font-bold">{formatCurrency(Number(invoice.grandTotal))}</span> and close the invoice.
+              </p>
+              <div className="flex gap-3 flex-wrap">
+                <div className="flex-1 min-w-[140px] space-y-1">
+                  <Label className="text-xs">Payment Mode</Label>
+                  <Select value={completeMode} onValueChange={setCompleteMode}>
+                    <SelectTrigger className="h-9 bg-white">
+                      <SelectValue placeholder="Select mode..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {['Cash', 'Bank Transfer', 'UPI', 'Cheque', 'Card'].map(m => (
+                        <SelectItem key={m} value={m}>{m}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex-1 min-w-[140px] space-y-1">
+                  <Label className="text-xs">Payment Date</Label>
+                  <Input
+                    type="date"
+                    value={completeDate}
+                    onChange={e => setCompleteDate(e.target.value)}
+                    className="h-9 bg-white"
+                  />
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  onClick={handleComplete}
+                  disabled={completing}
+                  className="bg-green-700 hover:bg-green-800 text-white"
+                >
+                  {completing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle className="mr-2 h-4 w-4" />}
+                  Confirm – Mark as Fully Paid
+                </Button>
+                <Button variant="ghost" onClick={() => setShowCompletePanel(false)}>
+                  Dismiss
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Header Info */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
